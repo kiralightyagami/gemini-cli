@@ -888,3 +888,27 @@ export async function* execStreaming(
     });
   }
 }
+
+export function stripEnvPrefix(command: string): string | undefined {
+  const tree = parseCommandTree(command);
+  if (!tree) return undefined;
+
+  const root = tree.rootNode;
+  // Walk the tree to find the first 'command' node
+  const stack: Node[] = [root];
+  while (stack.length > 0) {
+    const node = stack.pop()!;
+    if (node.type === 'command') {
+      const nameNode = node.childForFieldName('name');
+      if (nameNode) {
+        // Return from the command name to the end of the command node
+        return command.slice(nameNode.startIndex, node.endIndex).trim();
+      }
+    }
+    for (let i = node.childCount - 1; i >= 0; i--) {
+      const child = node.child(i);
+      if (child) stack.push(child);
+    }
+  }
+  return undefined;
+}
